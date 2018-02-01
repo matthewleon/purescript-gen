@@ -16,7 +16,7 @@
     "package.json"
   ],
   "dependencies": {
-    "purescript-nonempty": "^4.0.0",
+    "purescript-nonempty": "matthewleon/purescript-nonempty#Foldable1",
     "purescript-tailrec": "^3.0.0",
     "purescript-tuples": "^4.0.0",
     "purescript-unfoldable": "^3.0.0",
@@ -30,5 +30,8 @@
     "purescript-arrays": "^4.2.1",
     "purescript-transformers": "^3.4.0",
     "purescript-math": "^2.1.0"
+  },
+  "resolutions": {
+    "purescript-nonempty": "Foldable1"
   }
 }
