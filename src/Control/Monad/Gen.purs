@@ -13,11 +13,11 @@ import Prelude
 import Control.Monad.Gen.Class (class MonadGen, Size, chooseBool, chooseFloat, chooseInt, resize, sized)
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
 
-import Data.Foldable (class Foldable, length, foldl, foldMap)
+import Data.Foldable (length)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Monoid.Additive (Additive(..))
 import Data.Newtype (alaF)
-import Data.NonEmpty (NonEmpty, (:|))
+import Data.Semigroup.Foldable (class Foldable1)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Unfoldable (class Unfoldable, unfoldr)
 
@@ -30,10 +30,10 @@ choose genA genB = chooseBool >>= if _ then genA else genB
 
 -- | Creates a generator that outputs a value chosen from a selection of
 -- | existing generators with uniform probability.
-oneOf :: forall m f a. MonadGen m => Foldable f => NonEmpty f (m a) -> m a
-oneOf (x :| xs) = do
-  n <- chooseInt 0 (length xs)
-  if n < 1 then x else fromIndex (n - 1) x xs
+oneOf :: forall m f a. MonadGen m => Foldable1 f => f (m a) -> m a
+oneOf xs = do
+  n <- chooseInt 0 (length xs - 1)
+  fromIndex n xs
 
 -- | Creates a generator that outputs a value chosen from a selection of
 -- | existing generators, where the selection has weight values for the
@@ -42,19 +42,18 @@ oneOf (x :| xs) = do
 frequency
   :: forall m f a
    . MonadGen m
-  => Foldable f
-  => NonEmpty f (Tuple Number (m a))
+  => Foldable1 f
+  => f (Tuple Number (m a))
   -> m a
-frequency (x :| xs) = 
+frequency xs =
   let
-    first = fst x
-    total = first + alaF Additive foldMap fst xs
-  in 
+    total = alaF Additive foldMap fst xs
+  in
     chooseFloat 0.0 total >>= pick
   where
   pick pos = 
     let
-      initial = go (Tuple 0.0 $ snd x) x
+      initial = Tuple 0.0 Nothing
     in 
       snd $ foldl go initial xs
     where
@@ -65,12 +64,13 @@ frequency (x :| xs) =
         if weight <= pos && pos <= nextWeight
           then Tuple nextWeight currVal
           else Tuple nextWeight val
+
 -- | Creates a generator that outputs a value chosen from a selection with
 -- | uniform probability.
-elements :: forall m f a. MonadGen m => Foldable f => NonEmpty f a -> m a
-elements (x :| xs) = do
-  n <- chooseInt 0 (length xs)
-  pure if n == 0 then x else fromIndex (n - 1) x xs
+elements :: forall m f a. MonadGen m => Foldable1 f => f a -> m a
+elements xs = do
+  n <- chooseInt 0 (length xs - 1)
+  pure $ fromIndex n x xs
 
 -- | Creates a generator that produces unfoldable structures based on an
 -- | existing generator for the elements.
@@ -108,7 +108,7 @@ suchThat gen pred = tailRecM go unit
   go :: Unit -> m (Step Unit a)
   go _ = gen <#> \a -> if pred a then Done a else Loop unit
 
-fromIndex :: forall f a. Foldable f => Int -> a -> f a -> a
+fromIndex :: forall f a. Foldable1 f => Int -> f a -> a
 fromIndex i a = fromMaybe a <<< snd <<< (foldl go (Tuple 0 (Just a)))
   where
   go (Tuple ix v) x = Tuple (ix + 1) (if ix == i then Just x else v)

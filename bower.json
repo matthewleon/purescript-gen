@@ -20,7 +20,9 @@
     "purescript-tailrec": "^3.0.0",
     "purescript-tuples": "^4.0.0",
     "purescript-unfoldable": "^3.0.0",
-    "purescript-integers": "^3.0.0"
+    "purescript-integers": "^3.0.0",
+    "purescript-foldable-traversable": "^3.3.0",
+    "purescript-partial": "^1.2.1"
   },
   "devDependencies": {
     "purescript-console": "^3.0.0",
